@@ -19,7 +19,7 @@ let int_of_bool x =  if x then 1 else 0
 
 let extract_val = function
     |VBit b -> b
-    |_-> failwith "Ce n'est pas encore inmplémenté"
+    |_-> true
 
 let int_of_barray t=
     Array.fold_right(fun b n -> (2*n) + (if b then 1 else 0)) t 0
@@ -57,13 +57,8 @@ let bitarray_of_string s n =
 
 
 let string_of_array vect n =
-    let a =  Bytes.create n  in
-    let aux i b =
-        let carac = char_of_int (int_of_bool b) in
-        Bytes.set a i carac
-    in
-    Array.iteri aux vect;
-    Bytes.to_string a
+
+    Array.fold_left (fun a x -> string_of_int(int_of_bool x) ^ a) "" vect
 
 
 
@@ -87,12 +82,13 @@ let rec get_bit env nom =
     print_endline (general_error);
     get_bit env nom end
 
+
+
 let rec get_array env nom n =
     try
     (
         let a = read_line() in
         let long  = String.length a   in
-        print_endline (a);
         if  long <> n then ( print_endline (error_taille n); get_array env nom n )
         else begin
             try
@@ -107,10 +103,10 @@ let rec get_array env nom n =
     with _   ->   begin    print_endline (error_wrong_entry); get_array env nom n  end
 
 let get env var_type nom =
-    print_endline ("Entrez la valeur de la variable  "^nom^"  :");
+
     match Env.find nom var_type with
-    |TBit -> get_bit env nom
-    |TBitArray n -> get_array env nom n
+    |TBit -> print_endline ("Entrez la valeur de la variable  "^nom^"  : (un bit)") ;get_bit env nom
+    |TBitArray n -> print_endline ("Entrez la valeur de la variable  "^nom^"  : ("^string_of_int(n) ^" bit)"); get_array env nom n
 
 
 let print_res env a =

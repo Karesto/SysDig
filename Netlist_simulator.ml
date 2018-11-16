@@ -28,37 +28,37 @@ let extract_arg = function
 
 let calc eq =
   let calc_expr = function
-  | Earg a                    -> extract_arg a
+  | Earg a                     -> extract_arg a
 
-  | Enot a                    -> begin
+  | Enot a                     -> begin
                                  match extract_arg a with
                                  | VBit      b   -> VBit      (not b)
                                  | VBitArray tab -> VBitArray (Array.map (fun x -> (not x)) tab)
                                  end
-  |Ereg     (a)               -> Hashtbl.find !reg a
+  | Ereg     (a)               -> Hashtbl.find !reg a
 
-  |Eslice   (i,j,a)           -> begin
+  | Eslice   (i,j,a)           -> begin
                                 match extract_arg a with
                                 | VBit      b   -> VBit b
                                 | VBitArray tab -> VBitArray ( Array.sub tab i (j - i + 1))
                                 end
 
 
-  |Eselect  (i,a)             ->begin
+  | Eselect  (i,a)             -> begin
                                 match extract_arg a with
                                 | VBit      b   ->  VBit b
                                 | VBitArray tab ->  VBit tab.(i)
                                 end
 
 
-  |Ebinop   (op,a,b)         -> begin
+  | Ebinop   (op,a,b)         -> begin
                                 match extract_arg a, extract_arg b with
                                 | VBit      va,  VBit      vb                                         ->  VBit (calc_binop op va vb)
                                 | VBitArray ta,  VBitArray tb  when Array.length ta = Array.length tb ->  VBitArray (Array.map2 (calc_binop op) ta tb)
                                 | _ -> raise (Unable_to_cast_operands_boolop)
                                 end
 
-  |Econcat  (a,b)            -> begin
+  | Econcat  (a,b)            -> begin
                                 match extract_arg a, extract_arg b with
                                 | VBit b1 , VBit b2 ->
                             			VBitArray [| b1 ; b2 |]
@@ -70,7 +70,7 @@ let calc eq =
                             			VBitArray ( Array.append t1 t2)
                             		end
 
-  |Emux     (a1,a2,a3)       -> begin
+  | Emux     (a1,a2,a3)       -> begin
                                 match extract_arg a1 , extract_arg a2, extract_arg a3 with
                                 | VBit v1      , VBit v2      , VBit v3      -> VBit      (calc_mux v1 v2 v3)
                                 | VBitArray tm , VBitArray t1 , VBitArray t2
@@ -80,7 +80,7 @@ let calc eq =
                               	| _ ->  failwith "Type_Error_length"
                             		end
 
-  |Erom     (_,_,a)         -> begin
+  | Erom     (_,_,a)         -> begin
                                  match extract_arg a with
                                  |VBit      v -> (try
                                                   Hashtbl.find rom (int_of_bool   v)
@@ -91,21 +91,28 @@ let calc eq =
                                 end
 
 
-  |Eram  (_,_,a1,a2,a3,a4)     -> begin
+  | Eram  (_,n,a1,a2,a3,a4)     -> begin
                                   (match extract_arg a2  with
-                                 |VBit false -> ()
-                                 |VBitArray (v) when v.(0) = false  -> ()
+                                 |VBit true -> ()
+                                 |VBitArray (v) when v.(0) = true  -> ()
                                  |_ -> Stack.push (extract_arg a3,extract_arg a4) ram_stack)
                                 ;
-                                 (match extract_arg a1 with
+                                try
+                                 (
+                                match extract_arg a1 with
                                  |VBit      v -> Hashtbl.find ram (int_of_bool   v)
-                                 |VBitArray v -> Hashtbl.find ram (int_of_barray v))
+                                 |VBitArray v -> Hashtbl.find ram (int_of_barray v)
+                                 )
+                                 with _ ->  (match extract_arg a1 with
+                                            |VBit      v -> Hashtbl.replace ram (int_of_bool   v) (VBitArray (Array.make n false))
+                                            |VBitArray v -> Hashtbl.replace ram (int_of_barray v) (VBitArray (Array.make n false))
+                                            ); (VBitArray (Array.make n false))
                                  end
 
         in
 
-      (*  print_endline (fst eq);
-        print_endline (string_of_bool(extract_val (calc_expr (snd eq)) ) );*)
+      (*print_endline (fst eq);
+        print_endline (string_of_bool(extract_val (calc_expr (snd eq)) ) ); *)
 
         Hashtbl.replace env (fst eq) (calc_expr (snd eq))
 
@@ -131,11 +138,10 @@ let ini nom =
 let interpretons p nb =
     print_endline("Le nombre d'itérations est :" ^ string_of_int(nb) );
     List.iter ini        (List.map (fst) (Env.bindings p.p_vars));
-
     for i =1 to nb
     do
     print_endline("Itération n° :" ^string_of_int(i));
-    List.iter (get env p.p_vars)       p.p_inputs;
+    List.iter (get env p.p_vars)    p.p_inputs;
     List.iter calc       p.p_eqs;
     print_endline ("Résultats:");
     List.iter (print_res env)  p.p_outputs;
