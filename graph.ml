@@ -90,6 +90,15 @@ let topological g =
     | a::q when a.n_mark = NotVisited -> a.n_mark <- InProgress; tryons a.n_link_to ; a.n_mark <- Visited; tri_topo := a.n_label::!tri_topo ; tryons q
     | a::q -> tryons  q
   in
-  
+
   tryons g.g_nodes;
   !tri_topo
+(*
+-----------DEBUG---------------
+
+let () = let g = mk_graph() in   add_node g "1"; add_node g "21"; add_node g "22"; add_node g "333";
+  add_edge g "1" "21"; add_edge g "1" "22";
+  add_edge g "21" "333"; add_edge g "22" "333"; List.iter (print_string) (topological g)
+
+
+*)

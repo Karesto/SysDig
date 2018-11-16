@@ -1,5 +1,8 @@
+open Netlist_simulator
+
+
 let print_only = ref false
-let number_steps = ref (-1)
+let number_steps = ref (1)
 
 let compile filename =
   try
@@ -19,6 +22,7 @@ let compile filename =
     end;
     close_all ();
     if not !print_only then (
+      (*
       let simulator =
         if !number_steps = -1 then
           "./netlist_simulator.byte"
@@ -26,6 +30,9 @@ let compile filename =
           "./netlist_simulator.byte -n "^(string_of_int !number_steps)
       in
       ignore (Unix.system (simulator^" "^out_name))
+*)
+
+interpretons (Scheduler.schedule p) !number_steps
     )
   with
     | Netlist.Parse_error s -> Format.eprintf "An error accurred: %s@." s; exit 2
